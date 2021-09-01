@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Nyimbi Lambda Task1
+  SAM Template for task1
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+  INQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: 'INQueue'
+
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        Endpoint: 'nyimbi.odero@devfactory.com'
+        Protocol: 'email'
+      TopicName: 'SNSTopic'
+      DisplayName: 'FlaggedWordsTopic'
+
+  PublisherFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: sns_publisher/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Events:
+        SQSIncoming:
+          Type: SQS
+          Properties:
+            Queue: !Join [ ':', [ !GetAtt 'INQueue.Arn' ] ]
+            BatchSize: 1
+
+      Environment:
+        Variables:
+          INQUEUE: !Ref 'INQueue'
+          MAXMSG: 1
+          SNSTOPIC: !Ref 'SNSTopic'
+
+
+
+Outputs:
+  PublisherFunction:
+    Description: "PublisherFunction Lambda Function ARN"
+    Value: !GetAtt PublisherFunction.Arn
+
+  PublisherFunctionIamRole:
+    Description: "Implicit IAM Role created for PublisherFunction function"
+    Value: !GetAtt PublisherFunctionRole.Arn
+
+  QueueURL:
+    Description: 'URL of the SQS Queue that receives the push notifications.'
+    Value: !Ref 'INQueue'
+
+  QueueARN:
+    Description: 'ARN of the SQS Queue that receives the push notifications.'
+    Value: !Join [ ':', [ !GetAtt 'INQueue.Arn' ] ]
+
+  QueueName:
+    Description: 'Name of the SQS Queue that receives the push notifications.'
+    Value: !Join [ ':', [ !GetAtt 'INQueue.QueueName' ] ]
+
+#  TopicARN:
+#    Description: 'ARN of the SNS Topic'
+#    Value: !Join [':', [!GetAtt 'SNSTopic.Arn']]
