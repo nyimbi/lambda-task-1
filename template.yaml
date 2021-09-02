@@ -1,49 +1,73 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  Nyimbi Lambda Task1
-  SAM Template for task1
+  Nyimbi AWS Lambda Badge - Task 1 - Queue Processor
+  Using SAM Template
 
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
     Timeout: 3
 
 Resources:
-  INQueue:
+  NyimbiHttpApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: 'test'
+
+
+  NyimbiINQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: 'INQueue'
+      QueueName: 'NyimbiINQueue'
 
-  SNSTopic:
+  NyimbiSNSTopic:
     Type: AWS::SNS::Topic
     Properties:
       Subscription:
-        Endpoint: 'nyimbi.odero@devfactory.com'
-        Protocol: 'email'
-      TopicName: 'SNSTopic'
+        # Subscription takes a list of subscriptions
+        -
+          Endpoint: 'nyimbi.odero@devfactory.com'
+          Protocol: 'email'
+
+      TopicName: 'NyimbiSNSTopic'
       DisplayName: 'FlaggedWordsTopic'
 
   PublisherFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: sns_publisher/
       Handler: app.lambda_handler
       Runtime: python3.9
+      Description: 'Consumes SQS messages and publishes to an SNS Topic'
       Events:
         SQSIncoming:
           Type: SQS
           Properties:
-            Queue: !Join [ ':', [ !GetAtt 'INQueue.Arn' ] ]
+            Queue: !Join [':', [!GetAtt 'NyimbiINQueue.Arn']]
             BatchSize: 1
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref NyimbiHttpApi
+            Path: '/enq'
+            Method: 'ANY'
+
+      Policies:
+        - SNSPublishMessagePolicy:
+            TopicName: 'NyimbiSNSTopic'
+        - SQSPollerPolicy:
+            QueueName: 'NyimbiINQueue'
+        - LambdaInvokePolicy:
+            FunctionName: 'PublisherFunction'
+        - SNSCrudPolicy:
+            TopicName: 'NyimbiSNSTopic'
+
 
       Environment:
         Variables:
-          INQUEUE: !Ref 'INQueue'
+          INQUEUE: !Ref 'NyimbiINQueue'
           MAXMSG: 1
-          SNSTOPIC: !Ref 'SNSTopic'
-
-
+          SNSTOPIC: !Ref 'NyimbiSNSTopic'
 
 Outputs:
   PublisherFunction:
@@ -56,16 +80,15 @@ Outputs:
 
   QueueURL:
     Description: 'URL of the SQS Queue that receives the push notifications.'
-    Value: !Ref 'INQueue'
+    Value: !Ref 'NyimbiINQueue'
 
   QueueARN:
     Description: 'ARN of the SQS Queue that receives the push notifications.'
-    Value: !Join [ ':', [ !GetAtt 'INQueue.Arn' ] ]
+    Value: !Join [':', [!GetAtt 'NyimbiINQueue.Arn']]
 
   QueueName:
     Description: 'Name of the SQS Queue that receives the push notifications.'
-    Value: !Join [ ':', [ !GetAtt 'INQueue.QueueName' ] ]
+    Value: !Join [':', [!GetAtt 'NyimbiINQueue.QueueName']]
 
-#  TopicARN:
-#    Description: 'ARN of the SNS Topic'
-#    Value: !Join [':', [!GetAtt 'SNSTopic.Arn']]
+  ApiEndPoint:
+    Value: !Sub "https://${NyimbiHttpApi}.execute-api.${AWS::Region}.amazonaws.com/test/"
