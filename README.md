@@ -12,7 +12,6 @@ The application uses several AWS resources, including
 - A Lambda functions
 - An SNS Topic
 - An SQS Queue
-- API Gateway
  
 ## Testing the deployed application
 You can test the application as follows:
@@ -25,10 +24,6 @@ either create a json file (event.json)  or use the one provided. It contains:
     "description": "The definitive guide to using the world's leading cloud platform that isn't AWS, Azure, GCP, or several others."
   }
 }
-```
-Then run it against the API gateway Url:
-```bash
-curl -X PUT -H "Content-Type: application/json" https://skovypclc4.execute-api.us-east-1.amazonaws.com/test/enq -d @event.json
 ```
 
 This should yield the result:

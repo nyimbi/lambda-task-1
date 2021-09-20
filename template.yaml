@@ -9,12 +9,6 @@ Globals:
     Timeout: 3
 
 Resources:
-  NyimbiHttpApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      StageName: 'test'
-
-
   NyimbiINQueue:
     Type: AWS::SQS::Queue
     Properties:
@@ -45,12 +39,6 @@ Resources:
           Properties:
             Queue: !Join [':', [!GetAtt 'NyimbiINQueue.Arn']]
             BatchSize: 1
-        ApiEvent:
-          Type: Api
-          Properties:
-            RestApiId: !Ref NyimbiHttpApi
-            Path: '/enq'
-            Method: 'ANY'
 
       Policies:
         - SNSPublishMessagePolicy:
@@ -90,5 +78,3 @@ Outputs:
     Description: 'Name of the SQS Queue that receives the push notifications.'
     Value: !Join [':', [!GetAtt 'NyimbiINQueue.QueueName']]
 
-  ApiEndPoint:
-    Value: !Sub "https://${NyimbiHttpApi}.execute-api.${AWS::Region}.amazonaws.com/test/"
