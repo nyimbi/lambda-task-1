@@ -15,7 +15,9 @@ The application uses several AWS resources, including
  
 ## Testing the deployed application
 You can test the application as follows:
-either create a json file (event.json)  or use the one provided. It contains:
+On the AWS Console go to:
+Go to Amazon SQS > Queues > NyimbiINQueue > Send and receive messages
+Copy and paste this message:
 ```bash
 {
   "productID": "xyzzy420",
@@ -25,8 +27,8 @@ either create a json file (event.json)  or use the one provided. It contains:
   }
 }
 ```
-
-This should yield the result:
+and "Send Message"
+If you are subscribed to the SNS topic NyimbiSNSTopic, you will get an email with the result:
 ```bash
 {"message": "{\"productID\": \"xyzzy420\", \"flaggedWords\": \"[oracle,aws]\"}"}
 ```
