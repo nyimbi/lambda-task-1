@@ -14,17 +14,25 @@ INQUEUE = os.environ.get("INQUEUE")
 MAXMSG = int(os.environ.get("MAXMSG"))
 SNSTOPIC = os.environ.get("SNSTOPIC")
 
+# Get and initialize the SNS resource
+sns = boto3.resource("sns")
+sns_client = boto3.client("sns")
+# Get the queue
+topic = sns.Topic(SNSTOPIC)
+
+
+# create  sqs service resource
+sqs = boto3.resource("sqs")
+# get queue
+queue = sqs.Queue(INQUEUE)
+
 
 def lambda_handler(event, context):
+    global topic, sns_client, queue
     found = False
     ret_word = []
     msg = ""
-    # create  sqs service resource
-    sqs = boto3.resource("sqs")
-    # get queue
-    queue = sqs.Queue(INQUEUE)
-    # What sort of event do we have API or SQS (Does it Matter)
-    # Extract values from the Event
+
     for record in event["Records"]:
         payl = record["body"]
         payload = json.loads(payl)
@@ -43,11 +51,6 @@ def lambda_handler(event, context):
                 found = True
                 ret_word.append(word)
 
-        # Get the SNS resource
-        sns = boto3.resource("sns")
-        sns_client = boto3.client('sns')
-        # Get the queue
-        topic = sns.Topic(SNSTOPIC)
         if found:
             logger.info(
                 json.dumps(
